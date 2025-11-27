@@ -1,0 +1,44 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>AI NIDS+ Dashboard</title></head>
+<body>
+<h1>AI NIDS+ — Dashboard</h1>
+<p>Use the form below to upload a PCAP. The backend will process it and alerts will appear.</p>
+<form id="uform">
+  <input type="file" name="pcap" id="pcapfile" accept=".pcap" />
+  <button type="submit">Upload PCAP</button>
+</form>
+<h2>Alerts</h2>
+<div id="alerts">No alerts yet.</div>
+<script>
+async function fetchAlerts(){
+  try{
+    const res = await fetch('/alerts');
+    const j = await res.json();
+    const container = document.getElementById('alerts');
+    if(!j || j.length===0){ container.innerText = 'No alerts yet.'; return; }
+    container.innerHTML = '';
+    j.forEach(a=>{
+      const div = document.createElement('div');
+      div.style.border='1px solid #ccc'; div.style.margin='6px'; div.style.padding='6px';
+      const data = JSON.parse(a.data);
+      div.innerHTML = `<strong>${a.type}</strong> [${a.severity}] <br><small>${a.ts}</small><pre>${JSON.stringify(data,null,2)}</pre>`;
+      container.appendChild(div);
+    });
+  }catch(e){ console.error(e); }
+}
+setInterval(fetchAlerts, 2000);
+document.getElementById('uform').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const f = document.getElementById('pcapfile').files[0];
+  if(!f){ alert('choose pcap'); return; }
+  const fd = new FormData();
+  fd.append('file', f);
+  const res = await fetch('/upload_pcap', {method:'POST', body: fd});
+  const j = await res.json();
+  alert(JSON.stringify(j));
+});
+fetchAlerts();
+</script>
+</body>
+</html>
